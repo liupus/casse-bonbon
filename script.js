@@ -1,14 +1,29 @@
 var canvas = document.getElementById("jeuxCanvas");
 var ctx = canvas.getContext("2d");
 
-var x = canvas.width/2;
-var y = canvas.height-30;
-var vx = 3;
-var vy = -3;
+var x = 540;
+var y = 790;
+
+// Objet boulet
+
+var boulet = {
+  rayon: 20,
+  dessineMoiUnBoulet: function() {
+  ctx.beginPath();
+  ctx.arc(x, y, this.rayon, 0, Math.PI*2);
+  ctx.fillStyle = "#f2695a";
+  ctx.fill();
+  ctx.closePath();
+  },
+}
 
 //brique
 
+var colonneBrique = 10;
+var ligneBrique = 7;
+
 var brique = [];
+
 for(var i=0; i<ligneBrique; i++) {
   brique[i] = [];
   for(var j=0; j<colonneBrique; j++) {
@@ -16,20 +31,18 @@ for(var i=0; i<ligneBrique; i++) {
   }
 }
 
-var colonneBrique = 10;
-var ligneBrique = 7;
 var briqueLargeur = 95;
 var briqueHauteur = 30;
 var briquePadding = 10;
 var briquePositionHaut = 90;
 var briquePositionGauche = 20;
 
-function murBrique() {
+function dessinMurBrique() {
   for(var i=0; i<ligneBrique; i++) {
     for(var j=0; j<colonneBrique; j++) {
       if(brique[i][j].status == 1) {
-        var briqueX = (i*(briqueLargeur+briquePadding))+briquePositionGauche;
-        var briqueY = (j*(briqueHauteur+briquePadding))+briquePositionHaut;
+        var briqueX = (j*(briqueLargeur+briquePadding))+briquePositionGauche;
+        var briqueY = (i*(briqueHauteur+briquePadding))+briquePositionHaut;
         brique[i][j].x = briqueX;
         brique[i][j].y = briqueY;
         ctx.beginPath();
@@ -42,39 +55,32 @@ function murBrique() {
   }
 }
 
-// boulet
+// Objet palet
 
-var bouletRayon = 20;
-
-function boulet () {
+var palet = {
+  hauteur: 20,
+  largeur: 90,
+  position: (canvas.width-this.largeur)/2,
+  dessineMoiUnPalet: function () {
   ctx.beginPath();
-  ctx.arc(x, y, bouletRayon, 0, Math.PI*2);
-  ctx.fillStyle = "#f2695a";
-  ctx.fill();
-  ctx.closePath();
-}
-
-// palet
-
-var paletHauteur = 10;
-var paletLargeur = 75;
-var positionPalet = (canvas.width-paletLargeur)/2;
-
-function palet () {
-  ctx.beginPath();
-  ctx.rect(positionPalet, canvas.height-paletHauteur, paletLargeur, paletHauteur);
+  ctx.rect(this.position, canvas.height-this.hauteur, this.largeur, this.hauteur);
   ctx.fillStyle = "#F2AA5A";
   ctx.fill();
   ctx.closePath();
+  },
 }
 
-document.addEventListener("keydown", keyDownHandler, false);
-document.addEventListener("keyup", keyUpHandler, false);
+
+// Bouge le palet
+
+
+document.addEventListener("keydown", toucheBas, false);
+document.addEventListener("keyup", toucheHaut, false);
 
 var flecheDroite = false;
 var flecheGauche = false;
 
-function keyDownHandler(e) {
+function toucheBas(e) {
   if(e.keyCode == 39) {
     flecheDroite = true;
   }
@@ -82,7 +88,7 @@ function keyDownHandler(e) {
     flecheGauche = true;
   }
 }
-function keyUpHandler(e) {
+function toucheHaut(e) {
   if(e.keyCode == 39) {
     flecheDroite = false;
   }
@@ -93,7 +99,7 @@ function keyUpHandler(e) {
 
 // jeux + score
 
-function collision () {
+function choc () {
   for(var i=0; i<ligneBrique; i++) {
     for(var j=0; j<colonneBrique; j++) {
       var b = brique[i][j];
@@ -112,67 +118,48 @@ function collision () {
   }
 }
 
+
 var score = 0;
-
-function score() {
-  ctx.font = "16px Arial";
-  ctx.fillStyle = "#0095DD";
-  ctx.fillText("Score: "+score, 8, 20);
+function monScore() {
+  ctx.fillStyle = "#128dce";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: "+score, 25, 30);
 }
 
-var chances = 5;
+var vx = 6;
+var vy = -6;
 
-function mesChances () {
-  ctx.font = "16px Arial";
-  ctx.fillStyle = "#0095DD";
-  ctx.fillText("Chances: "+chances, canvas.width-65, 20);
-}
-
-function jeux () {
+function lanceLeJeux () {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  murBrique();
-  boulet ();
-  palet ();
-  score();
-  mesChances ();
-  collision ();
+  boulet.dessineMoiUnBoulet ();
+  palet.dessineMoiUnPalet ();
+  dessinMurBrique();
+  choc ();
+  monScore();
+  
+  x += vx;
+  y += vy;
 
-  if(x + vx > canvas.width-bouletRayon || x + vx < bouletRayon) {
+  if(x + vx > canvas.width-boulet.rayon || x + vx < boulet.rayon) {
     vx = -vx;
   }
-  if(y + vy < bouletRayon) {
+  if(y + vy < boulet.rayon) {
     vy = -vy;
   }
-  else if(y + vy > canvas.height-bouletRayon) {
-    if(x > positionPalet && x < positionPalet + paletLargeur) {
+  else if(y + vy > canvas.height-boulet.rayon) {
+    if(x > palet.position && x < palet.position + palet.largeur) {
       vy = -vy;
     }
     else {
-      chances--;
-      if(!chances) {
         alert("Looser");
         document.location.reload();
       }
-      else {
-        x = canvas.width/2;
-        y = canvas.height-30;
-        vx = 3;
-        vy = -3;
-        positionPalet = (canvas.width-paletLargeur)/2;
-      }
     }
+  if(flecheDroite && palet.position < canvas.width-palet.largeur) {
+    palet.position += 14;
   }
-
-  if(flecheDroite && positionPalet < canvas.width-paletLargeur) {
-    positionPalet += 7;
+  else if(flecheGauche && palet.position > 0) {
+    palet.position -= 14;
   }
-  else if(flecheGauche && positionPalet > 0) {
-    positionPalet -= 7;
-  }
-
-  x += vx;
-  y += vy;
-  requestAnimationFrame(jeux);
 }
-
-jeux();
+setInterval (lanceLeJeux, 10);
